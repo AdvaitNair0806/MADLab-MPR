@@ -41,93 +41,95 @@ export default function Login() {
   };
 
   return (
-    <main className="page-bg flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-sm space-y-8">
+    <main className="page-bg fixed inset-0 flex items-center justify-center p-6 text-slate-100 overflow-y-auto no-scrollbar relative isolate">
+      <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-600/20 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
 
-        {/* Brand mark */}
-        <div className="text-center">
-          <Link href="/" className="inline-flex items-center gap-2.5 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-md shadow-blue-200 group-hover:shadow-blue-300 transition-shadow">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 text-white">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z" />
-              </svg>
-            </div>
-            <span className="text-xl font-black text-slate-900 tracking-tight">TSEC Express</span>
+      <div className="w-full max-w-sm py-12 flex flex-col h-full min-h-[600px] justify-between">
+
+        <div className="space-y-8">
+          <Link href="/" className="inline-flex w-10 h-10 bg-slate-800/80 rounded-full items-center justify-center text-slate-400 hover:text-white transition-colors border border-white/10 mb-2">
+            <svg className="w-5 h-5 pr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg>
           </Link>
-          <h1 className="text-2xl font-bold text-slate-900 mt-6">Welcome back</h1>
-          <p className="text-slate-500 text-sm mt-1">Sign in to your account to continue.</p>
-        </div>
 
-        {/* Card */}
-        <div className="auth-card space-y-5">
-          {error && (
-            <div className="bg-red-50 text-red-600 text-sm p-3.5 rounded-xl border border-red-100 flex items-center gap-2">
-              <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" /></svg>
-              {error}
-            </div>
-          )}
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Welcome back</h1>
+            <p className="text-slate-400 text-sm mt-2">Enter your credentials to access your account.</p>
+          </div>
 
-          <form className="space-y-4" onSubmit={handleLogin}>
-            <div>
-              <label className="form-label">Email Address</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="form-input"
-                placeholder="you@tsec.edu"
-                required
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="form-label" style={{marginBottom: 0}}>Password</label>
-                <a href="#" className="text-xs text-blue-600 hover:text-blue-800 font-semibold">Forgot password?</a>
+          <div className="space-y-6">
+            {error && (
+              <div className="bg-red-500/20 text-red-300 text-sm p-4 rounded-2xl border border-red-500/30 flex items-center gap-3">
+                <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" /></svg>
+                {error}
               </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="form-input"
-                placeholder="••••••••"
-                required
-              />
-            </div>
+            )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
-            >
-              {loading ? (
-                <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Signing in...</>
-              ) : "Sign In"}
-            </button>
-          </form>
+            <form className="space-y-5" onSubmit={handleLogin}>
+              <div>
+                <label className="form-label text-xs">Email Address</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="form-input text-lg py-3"
+                  placeholder="you@tsec.edu"
+                  required
+                />
+              </div>
 
-          {/* Quick-fill demo hints */}
-          <div className="pt-2 border-t border-slate-100 text-center">
-            <p className="text-xs text-slate-400 mb-2">Quick fill — Demo accounts</p>
-            <div className="flex justify-center gap-2 flex-wrap">
-              {["prof@tsec.edu", "staff@tsec.edu", "admin@tsec.edu"].map(hint => (
+              <div>
+                <div className="flex justify-between items-center mb-0.5">
+                  <label className="form-label text-xs" style={{marginBottom: 0}}>Password</label>
+                  <a href="#" className="text-xs text-indigo-400 font-bold">Recovery</a>
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="form-input text-lg py-3"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+
+              <div className="pt-4">
                 <button
-                  key={hint}
-                  type="button"
-                  onClick={() => setEmail(hint)}
-                  className="text-xs bg-slate-50 border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 px-2.5 py-1 rounded-lg transition-colors font-mono"
+                  type="submit"
+                  disabled={loading}
+                  className="btn-primary bg-indigo-600 text-white disabled:opacity-50"
                 >
-                  {hint}
+                  {loading ? (
+                    <><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Signing in...</>
+                  ) : "Log In"}
                 </button>
-              ))}
+              </div>
+            </form>
+
+            <div className="pt-2">
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Quick Demo</p>
+              <div className="flex gap-2">
+                {["prof@tsec.edu", "staff@tsec.edu", "admin@tsec.edu"].map(hint => (
+                  <button
+                    key={hint}
+                    type="button"
+                    onClick={() => setEmail(hint)}
+                    className="flex-1 text-[10px] font-mono bg-slate-800/80 border border-slate-700 text-slate-400 hover:text-white px-2 py-2 rounded-xl transition-colors"
+                  >
+                    {hint.split('@')[0]}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        <p className="text-center text-sm text-slate-500">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-blue-600 font-semibold hover:underline">Register here</Link>
-        </p>
+        <div className="pb-safe">
+          <p className="text-center text-sm font-medium text-slate-400">
+            Don't have an account?{" "}
+            <Link href="/register" className="text-white font-bold hover:underline">Sign up</Link>
+          </p>
+        </div>
+
       </div>
     </main>
   );

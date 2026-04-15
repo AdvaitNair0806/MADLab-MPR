@@ -4,12 +4,13 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import AppShell from "@/components/AppShell";
 import Link from "next/link";
 
 const ROLE_CONFIG: Record<string, { color: string; bg: string; border: string; label: string }> = {
-  professor: { color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200", label: "Professor" },
-  staff:     { color: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200", label: "Support Staff" },
-  admin:     { color: "text-purple-700", bg: "bg-purple-50", border: "border-purple-200", label: "Administrator" },
+  professor: { color: "text-blue-300", bg: "bg-blue-500/20", border: "border-blue-500/30", label: "Professor" },
+  staff:     { color: "text-indigo-300", bg: "bg-indigo-500/20", border: "border-indigo-500/30", label: "Support Staff" },
+  admin:     { color: "text-purple-300", bg: "bg-purple-500/20", border: "border-purple-500/30", label: "Administrator" },
 };
 
 export default function Profile() {
@@ -35,65 +36,59 @@ export default function Profile() {
     return "/";
   };
 
-  const roleConf = ROLE_CONFIG[userRole || ""] || { color: "text-slate-700", bg: "bg-slate-50", border: "border-slate-200", label: userRole || "Unknown" };
+  const roleConf = ROLE_CONFIG[userRole || ""] || { color: "text-slate-300", bg: "bg-slate-500/20", border: "border-slate-500/30", label: userRole || "Unknown" };
 
   return (
     <ProtectedRoute>
-      <main className="page-bg flex min-h-screen items-center justify-center p-6">
-        <div className="w-full max-w-sm space-y-6">
-
-          {/* Header nav */}
-          <div className="flex items-center justify-between">
-            <Link href={getDashboardRoute()} className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-              Dashboard
+      <AppShell title="Profile">
+        <div className="p-4 space-y-6">
+          
+          <div className="pt-2">
+            <Link href={getDashboardRoute()} className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-400 hover:text-white transition-colors bg-slate-800/50 px-3 py-1.5 rounded-full border border-white/5">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg>
+              Back to App
             </Link>
-            <span className="text-sm font-black text-slate-900 tracking-tight">TSEC Express</span>
           </div>
 
-          {/* Profile card */}
-          <div className="auth-card space-y-6">
-            {/* Avatar */}
-            <div className="text-center">
-              <div className={`mx-auto w-20 h-20 ${roleConf.bg} ${roleConf.color} rounded-2xl flex items-center justify-center text-3xl font-black mb-4 border-2 ${roleConf.border}`}>
-                {userName ? userName.charAt(0).toUpperCase() : "U"}
-              </div>
-              <h1 className="text-xl font-bold text-slate-900">{userName || "User"}</h1>
-              <span className={`inline-block mt-2 text-xs font-bold px-3 py-1 rounded-full ${roleConf.bg} ${roleConf.color} uppercase tracking-widest border ${roleConf.border}`}>
-                {roleConf.label}
-              </span>
+          <div className="flex flex-col items-center pt-6 pb-6 border-b border-white/5">
+            <div className={`w-28 h-28 ${roleConf.bg} ${roleConf.color} rounded-[2rem] flex items-center justify-center text-4xl font-black mb-5 border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.12)]`}>
+              {userName ? userName.charAt(0).toUpperCase() : "U"}
             </div>
+            <h1 className="text-3xl font-black text-white tracking-tight">{userName || "User"}</h1>
+            <span className={`inline-block mt-3 text-[10px] font-bold px-3 py-1 rounded tracking-widest uppercase border ${roleConf.border} ${roleConf.bg} ${roleConf.color}`}>
+              {roleConf.label}
+            </span>
+          </div>
 
-            {/* Info grid */}
-            <div className="space-y-3 pt-2 border-t border-slate-100">
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                <p className="form-label" style={{marginBottom: "0.25rem"}}>Email Address</p>
-                <p className="text-slate-800 font-semibold text-sm">{user?.email}</p>
-              </div>
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                <p className="form-label" style={{marginBottom: "0.25rem"}}>Account ID</p>
-                <p className="text-slate-600 font-mono text-xs truncate">{user?.uid}</p>
-              </div>
+          <div className="space-y-4">
+            <div className="card p-4">
+              <p className="form-label">Email Address</p>
+              <p className="text-white font-semibold text-lg">{user?.email}</p>
             </div>
-
-            {/* Actions */}
-            <div className="space-y-3 pt-2 border-t border-slate-100">
-              <button
-                onClick={() => router.push(getDashboardRoute())}
-                className="btn-primary bg-slate-100 text-slate-700 hover:bg-slate-200"
-              >
-                Back to Dashboard
-              </button>
-              <button
-                onClick={handleLogout}
-                className="btn-primary bg-red-600 text-white hover:bg-red-700"
-              >
-                Sign Out
-              </button>
+            
+            <div className="card p-4 flex justify-between items-center bg-slate-900/50">
+              <div>
+                <p className="form-label">Account Security</p>
+                <p className="text-slate-400 text-sm">Update password & 2FA</p>
+              </div>
+              <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
             </div>
           </div>
+
+          <div className="pt-8 space-y-3 pb-safe">
+            <button
+              onClick={handleLogout}
+              className="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold rounded-2xl transition-all flex items-center justify-center gap-2 border border-red-500/20 active:scale-95"
+            >
+              Sign Out
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            </button>
+
+            <p className="text-center text-xs text-slate-600 mt-6 font-mono">TSEC Express v2.0-pwa</p>
+          </div>
+
         </div>
-      </main>
+      </AppShell>
     </ProtectedRoute>
   );
 }

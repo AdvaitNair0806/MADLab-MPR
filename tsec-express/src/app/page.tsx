@@ -1,42 +1,43 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Home() {
   return (
-    <main className="page-bg flex min-h-screen flex-col items-center justify-center p-6">
-      <div className="w-full max-w-sm space-y-8">
+    <main className="page-bg fixed inset-0 flex flex-col items-center justify-center p-6 text-slate-100 overflow-hidden isolate relative">
+      <div className="splash-orb w-96 h-96 bg-indigo-600/30 -top-20 -right-20"></div>
+      <div className="splash-orb w-80 h-80 bg-purple-600/20 bottom-10 -left-10" style={{ animationDelay: '2s' }}></div>
 
-        {/* Logo + Brand */}
-        <div className="text-center space-y-4">
-          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl flex items-center justify-center shadow-xl shadow-blue-200">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-10 h-10 text-white">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-4xl font-black tracking-tight text-slate-900">TSEC Express</h1>
-            <p className="text-slate-500 mt-2 text-base">Smart supply logistics for your campus.</p>
+      <div className="w-full max-w-sm flex flex-col h-full relative z-10 py-12">
+        {/* Top spacing */}
+        <div className="flex-1 flex flex-col justify-center">
+          {/* Logo + Brand */}
+          <div className="text-center space-y-6">
+            <div className="mx-auto w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[2rem] flex items-center justify-center shadow-[0_8px_30px_rgba(79,70,229,0.5)] transform -rotate-6 hover:rotate-0 transition-transform duration-500">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-12 h-12 text-white">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-4xl font-black tracking-tight text-white mb-2">TSEC Express</h1>
+              <p className="text-slate-400 text-base font-medium">Smart supply logistics for<br/>your campus.</p>
+            </div>
           </div>
         </div>
 
-        {/* Auth card */}
-        <div className="auth-card space-y-3">
+        {/* Bottom Actions */}
+        <div className="w-full space-y-4 pb-safe pt-8">
           <Link href="/login" className="block">
-            <button className="btn-primary bg-blue-600 text-white hover:bg-blue-700">
-              Sign In
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+            <button className="btn-primary bg-white text-slate-900 border border-white hover:bg-slate-100 shadow-[0_8px_30px_rgba(255,255,255,0.2)]">
+              Log In
+              <svg className="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
             </button>
           </Link>
           <Link href="/register" className="block">
-            <button className="btn-primary bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 hover:border-blue-200">
-              Create Account
+            <button className="w-full py-4 text-center font-bold text-slate-300 hover:text-white transition-colors">
+              Create an Account
             </button>
           </Link>
         </div>
-
-        {/* Footer */}
-        <p className="text-center text-xs text-slate-400">
-          &copy; {new Date().getFullYear()} Thadomal Shahani Engineering College
-        </p>
       </div>
     </main>
   );

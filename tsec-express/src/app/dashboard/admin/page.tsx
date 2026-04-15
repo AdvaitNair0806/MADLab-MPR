@@ -1,9 +1,10 @@
 "use client";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
-import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
+import AppShell from "@/components/AppShell";
+import BottomNav, { BottomNavItem } from "@/components/BottomNav";
 import { 
   InventoryItem, 
   Order, 
@@ -20,16 +21,14 @@ type TabState = "inventory" | "analytics" | "users";
 export default function AdminDashboard() {
   const { user } = useAuth();
   
-  // UI State
   const [activeTab, setActiveTab] = useState<TabState>("inventory");
   
-  // Data State
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [usersList, setUsersList] = useState<AppUser[]>([]);
 
-  // Form State
   const [newItem, setNewItem] = useState({ name: "", category: "Stationery", description: "", inStock: 0 });
+  const [isAddOpen, setIsAddOpen] = useState(false);
 
   useEffect(() => {
     const unsubInv = subscribeToInventory(setInventory);
@@ -38,12 +37,12 @@ export default function AdminDashboard() {
     return () => { unsubInv(); unsubOrd(); unsubUsr(); };
   }, []);
 
-  // --- Handlers ---
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItem.name || !newItem.category) return;
     addInventoryItem(newItem);
     setNewItem({ name: "", category: "Stationery", description: "", inStock: 0 });
+    setIsAddOpen(false);
   };
 
   const handleUpdateStock = (id: string, currentStock: number, delta: number) => {
@@ -52,12 +51,11 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteItem = (id: string) => {
-    if (confirm("Are you sure you want to delete this catalog item?")) {
+    if (confirm("Delete this catalog item?")) {
       deleteInventoryItem(id);
     }
   };
 
-  // --- Analytics Derivations ---
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
@@ -72,235 +70,229 @@ export default function AdminDashboard() {
     }
   });
 
+  const pendingUsersCount = usersList.filter(u => u.status === "Pending").length;
+
+  const navItems: BottomNavItem[] = [
+    {
+      id: "inventory",
+      label: "Stock",
+      icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+    },
+    {
+      id: "analytics",
+      label: "Stats",
+      icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+    },
+    {
+      id: "users",
+      label: "Users",
+      icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
+      badge: pendingUsersCount
+    }
+  ];
+
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
-      <main className="page-bg flex min-h-screen font-sans p-6 md:p-8">
-        <div className="w-full max-w-7xl mx-auto flex flex-col gap-6">
+      <AppShell title={activeTab === "inventory" ? "Inventory" : activeTab === "analytics" ? "Analytics" : "Manage Users"}>
+        
+        <div className="p-4">
           
-          {/* Header */}
-          <header className="flex flex-col md:flex-row justify-between items-center bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-2 h-full bg-purple-600"></div>
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">Admin Command Center</h1>
-              <p className="text-slate-500 mt-1">Manage global inventory, review analytics, and verify university staff.</p>
-            </div>
-            <div className="mt-4 md:mt-0 flex gap-4">
-              <Link href="/profile" className="px-6 py-2 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-colors">
-                My Profile
-              </Link>
-            </div>
-          </header>
-
-          {/* Navigation Tabs */}
-          <div className="flex gap-2">
-            {[ 
-              { id: "inventory", label: "Inventory CRUD" }, 
-              { id: "analytics", label: "Order Analytics" }, 
-              { id: "users", label: "User Management" } 
-            ].map((tab) => (
+          {/* Inventory Tab */}
+          {activeTab === "inventory" && (
+            <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+              
               <button 
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as TabState)}
-                className={`py-3 px-6 font-bold rounded-t-2xl transition-all border-b-2 ${
-                  activeTab === tab.id 
-                    ? "bg-white border-purple-600 text-purple-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]" 
-                    : "bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-                }`}
+                onClick={() => setIsAddOpen(true)}
+                className="w-full py-4 bg-indigo-600/20 text-indigo-300 font-bold rounded-2xl border border-indigo-500/30 flex justify-center items-center gap-2 hover:bg-indigo-600/30 active:scale-95 transition-all"
               >
-                {tab.label}
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                Add New Item
               </button>
-            ))}
-          </div>
-          
-          {/* Main Content Pane */}
-          <div className="bg-white rounded-b-3xl rounded-tr-3xl shadow-sm border border-slate-100 p-8 min-h-[600px] -mt-6 z-10 relative">
-            
-            {/* Tab A: Inventory Management */}
-            {activeTab === "inventory" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                {/* Form Col */}
-                <div className="lg:col-span-1 bg-slate-50 p-6 rounded-2xl border border-slate-100 h-fit">
-                  <h3 className="font-bold text-lg text-slate-900 mb-4 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
-                    Add New Catalog Item
-                  </h3>
-                  <form onSubmit={handleAddItem} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Item Name</label>
-                      <input required type="text" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm" placeholder="e.g. Wireless Mouse" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Category</label>
-                      <select required value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm bg-white">
-                        <option value="Stationery">Stationery</option>
-                        <option value="IT Accessories">IT Accessories</option>
-                        <option value="Furniture">Furniture</option>
-                        <option value="Misc">Misc</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Description</label>
-                      <textarea value={newItem.description} onChange={e => setNewItem({...newItem, description: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm resize-none" rows={2} placeholder="Brief description..."></textarea>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Initial Stock</label>
-                      <input required type="number" min="0" value={newItem.inStock} onChange={e => setNewItem({...newItem, inStock: parseInt(e.target.value) || 0})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm" />
-                    </div>
-                    <button type="submit" className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-colors active:scale-[0.98]">Create Item</button>
-                  </form>
-                </div>
 
-                {/* List Col */}
-                <div className="lg:col-span-2 space-y-4">
-                  <h3 className="font-bold text-lg text-slate-900 mb-2">Current Catalog</h3>
-                  {inventory.length === 0 ? (
-                    <div className="py-12 border-2 border-dashed border-slate-200 rounded-2xl text-center text-slate-500">
-                      Inventory is empty. Add a new item.
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                      <table className="w-full text-left border-collapse bg-white">
-                        <thead className="bg-slate-50 border-b border-slate-200">
-                          <tr>
-                            <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Product</th>
-                            <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Category</th>
-                            <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Stock</th>
-                            <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {inventory.map(item => (
-                            <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="py-3 px-4">
-                                <p className="font-bold text-slate-900 text-sm">{item.name}</p>
-                                <p className="text-xs text-slate-500 truncate max-w-[200px]">{item.description}</p>
-                              </td>
-                              <td className="py-3 px-4">
-                                <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md text-xs font-semibold">{item.category}</span>
-                              </td>
-                              <td className="py-3 px-4 text-center">
-                                <div className="inline-flex items-center gap-2 bg-slate-50 rounded-lg p-1 border border-slate-200">
-                                  <button onClick={() => handleUpdateStock(item.id, item.inStock, -1)} className="w-6 h-6 rounded bg-white border border-slate-200 text-slate-600 hover:text-red-500 hover:border-red-200 transition-colors flex items-center justify-center font-bold pb-0.5">-</button>
-                                  <span className="w-8 text-center text-sm font-bold text-slate-800">{item.inStock}</span>
-                                  <button onClick={() => handleUpdateStock(item.id, item.inStock, 1)} className="w-6 h-6 rounded bg-white border border-slate-200 text-slate-600 hover:text-green-500 hover:border-green-200 transition-colors flex items-center justify-center font-bold pb-0.5">+</button>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4 text-right">
-                                <button onClick={() => handleDeleteItem(item.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+              {inventory.length === 0 ? (
+                <div className="py-20 text-center text-slate-500">
+                  Inventory is empty. Tap above to add items.
                 </div>
-              </div>
-            )}
-
-            {/* Tab B: Order Analytics */}
-            {activeTab === "analytics" && (
-              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Items Delivered Today</p>
-                    <p className="text-5xl font-black text-slate-900 mt-2">{todaysDelivered.length}</p>
-                  </div>
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
-                    <div className="absolute -right-4 -bottom-4 bg-purple-50 text-purple-100 w-32 h-32 rounded-full z-0 group-hover:scale-150 transition-transform duration-500"></div>
-                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider relative z-10">Total Active Staff</p>
-                    <p className="text-5xl font-black text-purple-700 mt-2 relative z-10">{Object.keys(staffDeliveries).length}</p>
-                  </div>
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">All-time Orders Recorded</p>
-                    <p className="text-5xl font-black text-slate-900 mt-2">{orders.length}</p>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                  <div className="p-6 border-b border-slate-100">
-                    <h3 className="font-bold text-lg text-slate-900">Today's Staff Delivery Leaderboard</h3>
-                  </div>
-                  {Object.keys(staffDeliveries).length === 0 ? (
-                    <div className="p-8 text-center text-slate-500 bg-slate-50">
-                      No deliveries have been completed today yet.
-                    </div>
-                  ) : (
-                    <div className="p-6 space-y-4 bg-slate-50">
-                      {Object.entries(staffDeliveries).sort((a,b) => b[1] - a[1]).map(([email, count], idx) => (
-                        <div key={email} className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
-                          <div className="flex items-center gap-4">
-                            <span className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-sm">
-                              #{idx + 1}
-                            </span>
-                            <div>
-                              <p className="font-bold text-slate-900">{email}</p>
-                              <p className="text-xs text-slate-500">Support Staff Account</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-black text-purple-600">{count}</p>
-                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Deliveries</p>
-                          </div>
+              ) : (
+                <div className="flex flex-col gap-3 pb-8">
+                  {inventory.map(item => (
+                    <div key={item.id} className="card p-4 flex flex-col gap-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded uppercase tracking-widest">{item.category}</span>
+                          <h3 className="text-base font-bold text-slate-100 mt-2">{item.name}</h3>
+                          <p className="text-xs text-slate-400 mt-0.5">{item.description}</p>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Tab C: User Management */}
-            {activeTab === "users" && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="bg-blue-50 text-blue-800 p-4 rounded-xl border border-blue-200 text-sm flex gap-3 items-start">
-                  <svg className="w-5 h-5 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  <p><strong>Note:</strong> Since we are running on the local mocked environment, user logins are automatically allowed right now. This interface demonstrates how User Verification is structured for the database backend.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {usersList.sort((a,b) => b.createdAt - a.createdAt).map(u => (
-                    <div key={u.id} className={`p-5 rounded-2xl border bg-white shadow-sm flex flex-col justify-between ${u.status === "Pending" ? "border-amber-200" : "border-slate-200"}`}>
-                      <div>
-                        <div className="flex justify-between items-start mb-2">
-                          <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider ${
-                            u.status === "Pending" ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"
-                          }`}>
-                            {u.status} User
-                          </span>
-                          <span className="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded">{u.role}</span>
-                        </div>
-                        <h4 className="font-bold text-slate-900 mt-3 text-lg truncate" title={u.name}>{u.name}</h4>
-                        <p className="text-sm text-slate-500 truncate" title={u.email}>{u.email}</p>
+                        <button onClick={() => handleDeleteItem(item.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
                       </div>
                       
-                      <div className="pt-4 mt-4 border-t border-slate-100">
-                        {u.status === "Pending" ? (
-                          <button 
-                            onClick={() => approveUser(u.id)}
-                            className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors text-sm"
-                          >
-                            Approve Account
+                      <div className="flex items-center justify-between border-t border-white/5 pt-3">
+                        <span className="text-xs font-bold text-slate-500 uppercase">Stock Level</span>
+                        <div className="flex items-center gap-4 bg-slate-900/50 p-1 rounded-xl">
+                          <button onClick={() => handleUpdateStock(item.id, item.inStock, -1)} className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-slate-300 hover:text-red-400 active:scale-95">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 10a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.75A.75.75 0 014 10z" clipRule="evenodd" /></svg>
                           </button>
-                        ) : (
-                          <button disabled className="w-full py-2 bg-slate-50 text-slate-400 font-bold rounded-xl text-sm flex items-center justify-center gap-2 border border-slate-200">
-                            <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
-                            Verified
+                          <span className="w-8 text-center text-sm font-bold text-white">{item.inStock}</span>
+                          <button onClick={() => handleUpdateStock(item.id, item.inStock, 1)} className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-slate-300 hover:text-emerald-400 active:scale-95">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
                           </button>
-                        )}
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          )}
 
-          </div>
+          {/* Analytics Tab */}
+          {activeTab === "analytics" && (
+            <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="card p-4 border border-indigo-500/20 bg-indigo-500/5">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Missions Today</p>
+                  <p className="text-3xl font-black text-indigo-400 mt-1">{todaysDelivered.length}</p>
+                </div>
+                <div className="card p-4 border border-purple-500/20 bg-purple-500/5">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Staff</p>
+                  <p className="text-3xl font-black text-purple-400 mt-1">{Object.keys(staffDeliveries).length}</p>
+                </div>
+                <div className="col-span-2 card p-4">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">All-Time Requests</p>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <p className="text-4xl font-black text-white">{orders.length}</p>
+                    <span className="text-sm text-emerald-400 font-bold">+ {orders.filter(o => o.status === "Pending").length} waiting</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card overflow-hidden mt-6">
+                <div className="p-4 border-b border-white/5">
+                  <h3 className="font-bold text-lg text-slate-100 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                    Top Staff Today
+                  </h3>
+                </div>
+                <div className="p-2 space-y-1">
+                  {Object.keys(staffDeliveries).length === 0 ? (
+                    <div className="p-6 text-center text-slate-500 text-sm">
+                      No deliveries completed today yet.
+                    </div>
+                  ) : (
+                    Object.entries(staffDeliveries).sort((a,b) => b[1] - a[1]).map(([email, count], idx) => (
+                      <div key={email} className="flex items-center justify-between p-3 rounded-xl bg-slate-900/50">
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center font-bold text-xs border border-white/5">
+                            {idx + 1}
+                          </span>
+                          <p className="font-semibold text-slate-200 text-sm">{email}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-black text-indigo-400">{count}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Users Tab */}
+          {activeTab === "users" && (
+            <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+              {usersList.length === 0 ? (
+                <div className="py-20 flex justify-center"><span className="animate-pulse">Loading users...</span></div>
+              ) : (
+                <div className="flex flex-col gap-3 pb-8">
+                  {usersList.sort((a,b) => b.createdAt - a.createdAt).map(u => (
+                    <div key={u.id} className="card p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <p className="font-bold text-slate-100">{u.name}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{u.email}</p>
+                        </div>
+                        <span className={`px-2 py-1 rounded text-[10px] font-mono tracking-widest uppercase ${
+                          u.role === 'admin' ? 'bg-purple-500/20 text-purple-300' :
+                          u.role === 'staff' ? 'bg-indigo-500/20 text-indigo-300' :
+                          'bg-blue-500/20 text-blue-300'
+                        }`}>
+                          {u.role}
+                        </span>
+                      </div>
+
+                      {u.status === "Pending" ? (
+                        <button 
+                          onClick={() => approveUser(u.id)}
+                          className="w-full py-2.5 bg-amber-500 text-slate-900 font-bold rounded-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2"
+                        >
+                          Approve Registration
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                        </button>
+                      ) : (
+                        <div className="w-full py-2 bg-slate-900/50 text-emerald-400 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 border border-emerald-500/10">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" /></svg>
+                          Verified Identity
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
-      </main>
+
+        {/* Add Item Bottom Sheet */}
+        {isAddOpen && (
+          <div className="fixed inset-0 z-50 flex justify-center items-end bg-slate-950/60 backdrop-blur-sm p-4 animate-in fade-in">
+            <div className="absolute inset-0" onClick={() => setIsAddOpen(false)}></div>
+            <div className="relative bg-slate-900 border border-slate-800 w-full max-w-md rounded-[2rem] p-6 shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-white">Add Item</h2>
+                <button onClick={() => setIsAddOpen(false)} className="text-slate-400 hover:text-white"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+              </div>
+              <form onSubmit={handleAddItem} className="space-y-4">
+                <div>
+                  <label className="form-label">Item Name</label>
+                  <input required type="text" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="form-input" placeholder="e.g. Projector" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">Category</label>
+                    <select required value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value})} className="form-input bg-slate-900 pr-8 custom-select">
+                      <option value="Stationery">Stationery</option>
+                      <option value="IT Accessories">IT Accs</option>
+                      <option value="Furniture">Furniture</option>
+                      <option value="Misc">Misc</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label">Init Stock</label>
+                    <input required type="number" min="0" value={newItem.inStock} onChange={e => setNewItem({...newItem, inStock: parseInt(e.target.value) || 0})} className="form-input" />
+                  </div>
+                </div>
+                <div>
+                  <label className="form-label">Description</label>
+                  <input type="text" value={newItem.description} onChange={e => setNewItem({...newItem, description: e.target.value})} className="form-input" placeholder="Brief info..." />
+                </div>
+                <button type="submit" className="btn-primary bg-indigo-600 hover:bg-indigo-500 text-white mt-4">
+                  Create Item
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        <BottomNav 
+          currentTab={activeTab}
+          onTabChange={(id) => setActiveTab(id as TabState)}
+          items={navItems}
+        />
+      </AppShell>
     </ProtectedRoute>
   );
 }

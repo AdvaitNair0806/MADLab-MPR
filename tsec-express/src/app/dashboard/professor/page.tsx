@@ -1,9 +1,10 @@
 "use client";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
-import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
+import AppShell from "@/components/AppShell";
+import BottomNav, { BottomNavItem } from "@/components/BottomNav";
 import { 
   InventoryItem, 
   CartItem, 
@@ -19,21 +20,17 @@ type TabState = "request" | "orders";
 export default function ProfessorDashboard() {
   const { user } = useAuth();
   
-  // UI State
   const [activeTab, setActiveTab] = useState<TabState>("request");
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Data State
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   
-  // Form State
   const [roomNumber, setRoomNumber] = useState("");
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Load Inventory
   const loadInventory = async () => {
     try {
       const items = await fetchInventoryItems();
@@ -47,19 +44,14 @@ export default function ProfessorDashboard() {
     loadInventory();
   }, []);
 
-  // Listen to Active Orders once user is loaded
   useEffect(() => {
     if (!user?.email) return;
-    
-    // Subscribe to real-time updates for orders
     const unsubscribe = subscribeToProfessorOrders(user.email, (orders) => {
       setActiveOrders(orders);
     });
-
     return () => unsubscribe();
   }, [user]);
 
-  // Cart Functions
   const addToCart = (item: InventoryItem) => {
     setCart(prev => {
       const existing = prev.find(c => c.id === item.id);
@@ -82,7 +74,6 @@ export default function ProfessorDashboard() {
 
   const totalItemsInCart = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Checkout
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !user.email) return;
@@ -92,16 +83,16 @@ export default function ProfessorDashboard() {
     try {
       await createOrder({
         professorEmail: user.email,
-        professorName: user.email.split('@')[0], // Extracting name from mock context
+        professorName: user.email.split('@')[0], 
         roomNumber,
         items: cart,
         status: "Pending",
       });
       
-      // Reset cart and form
       setCart([]);
       setRoomNumber("");
-      setActiveTab("orders"); // Switch to active orders to show new entry
+      setIsCartOpen(false);
+      setActiveTab("orders"); 
     } catch (err) {
       console.error("Failed to checkout:", err);
     } finally {
@@ -109,263 +100,199 @@ export default function ProfessorDashboard() {
     }
   };
 
-  // Seeding
-  const handleSeed = async () => {
-    setIsSeeding(true);
-    try {
-      await seedDummyItems();
-      await loadInventory();
-    } catch (err) {
-      console.error("Seeding failed", err);
-    } finally {
-      setIsSeeding(false);
-    }
-  };
-
-  // Render logic
   const filteredInventory = inventory.filter(i => 
     i.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     i.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const navItems: BottomNavItem[] = [
+    {
+      id: "request",
+      label: "Request",
+      icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+    },
+    {
+      id: "orders",
+      label: "Orders",
+      icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>,
+      badge: activeOrders.filter(o => o.status !== "Delivered").length
+    }
+  ];
+
   return (
     <ProtectedRoute allowedRoles={["professor"]}>
-      <main className="page-bg flex min-h-screen">
+      <AppShell title={activeTab === "request" ? "Request Supplies" : "Active Orders"}>
         
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col items-center p-6 md:p-8 pb-32 lg:pb-8">
-          <div className="w-full max-w-7xl flex flex-col gap-6">
-
-            <header className="dash-header flex flex-col md:flex-row justify-between items-center p-6 md:p-8 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
-              <div>
-                <h1 className="text-3xl font-bold text-slate-900">Professor Dashboard</h1>
-                <p className="text-slate-500 mt-1">Request classroom supplies and track your orders.</p>
+        <div className="p-4 space-y-6">
+          {/* Request Tab */}
+          {activeTab === "request" && (
+            <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+              {/* Search Bar */}
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="Search materials..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="form-input pl-11"
+                />
+                <svg className="w-5 h-5 text-slate-500 absolute left-4 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </div>
-              <div className="flex gap-4 mt-4 md:mt-0">
-                <Link href="/profile" className="px-5 py-2 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-colors text-sm">
-                  Profile
-                </Link>
-              </div>
-            </header>
 
-            {/* Navigation Tabs */}
-            <div className="flex gap-2 px-6 md:px-8 pt-6">
-              <button
-                onClick={() => setActiveTab("request")}
-                className={`tab-btn ${
-                  activeTab === "request"
-                    ? "bg-white border-blue-600 text-blue-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"
-                }`}
-              >
-                Request Items
-              </button>
-              <button
-                onClick={() => setActiveTab("orders")}
-                className={`tab-btn flex items-center gap-2 ${
-                  activeTab === "orders"
-                    ? "bg-white border-blue-600 text-blue-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"
-                }`}
-              >
-                Active Orders
-                {activeOrders.length > 0 && (
-                  <span className="bg-blue-100 text-blue-700 py-0.5 px-2 rounded-full text-xs font-bold">{activeOrders.length}</span>
-                )}
-              </button>
-            </div>
-
-            {/* Tab content panel */}
-            <div className="p-6 md:p-8 bg-slate-50 rounded-b-3xl min-h-[500px]">
-              
-              {/* Tab: Request Items */}
-              {activeTab === "request" && (
-                <div className="space-y-6">
-                  {/* Search Bar */}
-                  <div className="relative max-w-md">
-                    <input 
-                      type="text" 
-                      placeholder="Search for markers, projectors..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow bg-white"
-                    />
-                    <svg className="w-5 h-5 text-slate-400 absolute left-3 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+              {/* Items List */}
+              <div className="flex flex-col gap-3">
+                {filteredInventory.length === 0 ? (
+                  <div className="py-12 text-center text-slate-500 card border-dashed">
+                    No items found.
                   </div>
-
-                  {/* Inventory Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredInventory.length === 0 ? (
-                      <div className="col-span-full py-12 text-center text-slate-500 bg-white rounded-2xl border border-slate-100 border-dashed">
-                        No items found matching your search.
+                ) : (
+                  filteredInventory.map(item => (
+                    <div key={item.id} className="card p-4 flex justify-between items-center group">
+                      <div className="flex-1 pr-4">
+                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{item.category}</span>
+                        <h3 className="text-base font-bold text-slate-100">{item.name}</h3>
+                        <p className="text-xs text-slate-400 mt-1 line-clamp-1">{item.description}</p>
                       </div>
-                    ) : (
-                      filteredInventory.map(item => (
-                        <div key={item.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-                          <div>
-                            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase tracking-wide">
-                              {item.category}
-                            </span>
-                            <h3 className="text-lg font-bold text-slate-900 mt-2">{item.name}</h3>
-                            <p className="text-sm text-slate-500 mt-1">{item.description}</p>
-                            <p className="text-sm font-medium text-slate-400 mt-2">In Stock: {item.inStock || "N/A"}</p>
-                          </div>
-                          
-                          <button 
-                            onClick={() => addToCart(item)}
-                            className="mt-6 w-full py-2.5 bg-slate-50 hover:bg-blue-50 text-blue-600 font-semibold rounded-xl border border-slate-100 hover:border-blue-200 transition-colors flex items-center justify-center gap-2"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                            </svg>
-                            Add to Cart
-                          </button>
-                        </div>
-                      ))
-                    )}
+                      <button 
+                        onClick={() => addToCart(item)}
+                        className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center hover:bg-indigo-500/20 active:scale-95 transition-all border border-indigo-500/20"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
+                      </button>
+                    </div>
+                  ))
+                )}
+                {/* Spacer for Floating Action Button area */}
+                <div className="h-20"></div>
+              </div>
+            </div>
+          )}
+
+          {/* Orders Tab */}
+          {activeTab === "orders" && (
+            <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+              {activeOrders.length === 0 ? (
+                <div className="py-16 flex flex-col items-center text-center text-slate-500">
+                  <svg className="w-16 h-16 text-slate-700/50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                  <p className="text-lg font-bold text-slate-400">No active orders</p>
+                  <p className="text-sm mt-1">Your supply requests will appear here.</p>
+                </div>
+              ) : (
+                activeOrders.map(order => (
+                  <div key={order.id} className="card overflow-hidden">
+                    <div className="p-4 border-b border-white/5 flex justify-between items-start">
+                      <div>
+                        <p className="text-xs text-slate-500 font-mono">#{order.id.slice(0, 8)}</p>
+                        <h3 className="font-bold text-slate-100 text-lg mt-0.5">Room {order.roomNumber}</h3>
+                      </div>
+                      <div className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                        order.status === "Pending" ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" :
+                        order.status === "In Transit" ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30" :
+                        order.status === "Delivered" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" :
+                        "bg-slate-500/20 text-slate-300"
+                      }`}>
+                        {order.status}
+                      </div>
+                    </div>
+                    <div className="p-4 bg-slate-900/50">
+                      <ul className="space-y-1.5">
+                        {order.items.map((item, idx) => (
+                          <li key={idx} className="flex justify-between text-sm text-slate-300">
+                            <span>{item.name}</span>
+                            <span className="font-mono text-xs bg-slate-800 px-1.5 py-0.5 rounded text-slate-400">x{item.quantity}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* Tab: Active Orders */}
-              {activeTab === "orders" && (
-                <div className="space-y-6">
-                  {activeOrders.length === 0 ? (
-                    <div className="py-20 text-center text-slate-500 bg-white rounded-2xl border border-slate-100 border-dashed">
-                      <svg className="w-12 h-12 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                      </svg>
-                      You don't have any active orders right now.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {activeOrders.map(order => (
-                        <div key={order.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                          {/* Order Header */}
-                          <div className="p-6 border-b border-slate-100 flex justify-between items-start">
-                            <div>
-                              <p className="text-xs text-slate-500 font-mono">Order #{order.id.slice(0, 8)}</p>
-                              <h3 className="font-bold text-slate-900 mt-1">Room {order.roomNumber}</h3>
-                            </div>
-                            
-                            {/* Status Badge */}
-                            <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                              order.status === "Pending" ? "bg-amber-100 text-amber-700" :
-                              order.status === "Accepted" ? "bg-blue-100 text-blue-700" :
-                              order.status === "In Transit" ? "bg-purple-100 text-purple-700" :
-                              order.status === "Delivered" ? "bg-green-100 text-green-700" :
-                              "bg-slate-100 text-slate-700"
-                            }`}>
-                              {order.status}
-                            </div>
-                          </div>
-                          
-                          {/* Order Items */}
-                          <div className="p-6 bg-slate-50">
-                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 text-center tracking-wider">Requested Items</h4>
-                            <ul className="space-y-2">
-                              {order.items.map((item, idx) => (
-                                <li key={idx} className="flex justify-between text-sm items-center">
-                                  <span className="text-slate-700 font-medium">{item.name}</span>
-                                  <span className="text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-md font-mono text-xs">x{item.quantity}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          {/* Order Footer - Timeline */}
-                          <div className="p-4 border-t border-slate-100 text-center">
-                             <div className="w-full flex justify-between items-center text-xs font-semibold text-slate-400 max-w-xs mx-auto">
-                                <span className={order.status === "Pending" ? "text-amber-600" : "text-slate-800"}>Pending</span>
-                                <span className="flex-1 border-t border-dashed border-slate-200 mx-2"></span>
-                                <span className={order.status === "Accepted" ? "text-blue-600" : (["In Transit", "Delivered"].includes(order.status) ? "text-slate-800" : "")}>Accepted</span>
-                                <span className="flex-1 border-t border-dashed border-slate-200 mx-2"></span>
-                                <span className={order.status === "Delivered" ? "text-green-600" : "text-slate-300"}>Done</span>
-                             </div>
-                          </div>
-
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                ))
               )}
             </div>
-
-          </div>
+          )}
         </div>
 
-        {/* Floating Cart Sidebar (Displays only when items are present and on request tab) */}
+        {/* Floating Cart Button */}
         {cart.length > 0 && activeTab === "request" && (
-          <aside className="fixed bottom-0 left-0 right-0 lg:bottom-auto lg:top-8 lg:right-8 lg:left-auto lg:w-96 bg-white border-t lg:border border-slate-200 shadow-2xl lg:rounded-3xl z-50 overflow-hidden flex flex-col max-h-[85vh]">
-            <div className="p-5 border-b border-slate-100 bg-slate-900 text-white flex justify-between items-center">
-              <h2 className="font-bold text-lg flex items-center gap-2">
-                <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                Current Request
-              </h2>
-              <span className="bg-slate-700 px-2 py-1 rounded-lg text-xs font-bold">{totalItemsInCart} items</span>
-            </div>
+          <div className="fixed bottom-20 right-4 left-4 z-40 flex justify-center animate-in slide-in-from-bottom-5">
+            <button 
+              onClick={() => setIsCartOpen(true)}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-full py-3.5 px-6 font-bold shadow-[0_8px_30px_rgba(79,70,229,0.5)] flex items-center gap-3 w-full max-w-sm transition-transform active:scale-95"
+            >
+              <span className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center text-sm">{totalItemsInCart}</span>
+              <span className="flex-1 text-left">View Current Request</span>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        )}
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50">
-              {cart.map(item => (
-                <div key={item.id} className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex-1 pr-4">
-                    <p className="font-semibold text-slate-800 text-sm truncate">{item.name}</p>
-                    <p className="text-xs text-slate-400 uppercase tracking-widest mt-0.5">{item.category}</p>
-                  </div>
-                  <div className="flex items-center gap-3 bg-slate-50 p-1 rounded-lg border border-slate-100">
-                    <button onClick={() => updateQuantity(item.id, -1)} className="w-6 h-6 flex items-center justify-center text-slate-500 hover:text-red-500 hover:bg-white rounded-md transition-colors">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" /></svg>
-                    </button>
-                    <span className="font-bold text-sm text-slate-800 w-4 text-center">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, 1)} className="w-6 h-6 flex items-center justify-center text-slate-500 hover:text-blue-500 hover:bg-white rounded-md transition-colors">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+        {/* Cart Bottom Sheet */}
+        {isCartOpen && (
+          <div className="fixed inset-0 z-50 flex justify-center items-end bg-slate-950/60 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in">
+            {/* Click away dismiss */}
+            <div className="absolute inset-0" onClick={() => setIsCartOpen(false)}></div>
+            
+            <div className="relative bg-slate-900 border border-slate-800 w-full max-w-md rounded-[2rem] p-5 shadow-2xl flex flex-col max-h-[85vh] animate-in slide-in-from-bottom-10 duration-300">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  Request Detail
+                </h2>
+                <button onClick={() => setIsCartOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:text-white">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
 
-            <div className="p-5 border-t border-slate-100 bg-white">
+              <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 mb-6">
+                {cart.map(item => (
+                  <div key={item.id} className="flex justify-between items-center p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
+                    <div className="flex-1 pr-3">
+                      <p className="font-semibold text-slate-200 text-sm truncate">{item.name}</p>
+                    </div>
+                    <div className="flex items-center gap-3 bg-slate-950/50 p-1 rounded-lg">
+                      <button onClick={() => updateQuantity(item.id, -1)} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-white bg-slate-800 rounded-md">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 10a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.75A.75.75 0 014 10z" clipRule="evenodd" /></svg>
+                      </button>
+                      <span className="font-bold text-sm text-white w-4 text-center">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.id, 1)} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-white bg-slate-800 rounded-md">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               <form onSubmit={handleCheckout} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Target Room Number</label>
                   <input 
                     type="text" 
                     required
-                    placeholder="e.g. 504, 3rd Floor Lab"
+                    placeholder="Enter Room Number (e.g. 504)..."
                     value={roomNumber}
                     onChange={(e) => setRoomNumber(e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm"
+                    className="form-input text-lg font-semibold py-4"
                   />
                 </div>
                 <button 
                   type="submit" 
                   disabled={isCheckingOut || !roomNumber}
-                  className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors flex justify-center items-center gap-2"
+                  className="btn-primary bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50 disabled:scale-100"
                 >
-                  {isCheckingOut ? (
-                    <span className="animate-pulse">Placing Request...</span>
-                  ) : (
-                    <>
-                      <span>Submit Request</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                      </svg>
-                    </>
-                  )}
+                  {isCheckingOut ? "Sending..." : "Confirm Request"}
                 </button>
               </form>
             </div>
-          </aside>
+          </div>
         )}
 
-      </main>
+        <BottomNav 
+          currentTab={activeTab}
+          onTabChange={(id) => setActiveTab(id as TabState)}
+          items={navItems}
+        />
+      </AppShell>
     </ProtectedRoute>
   );
 }
